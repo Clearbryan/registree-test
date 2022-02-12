@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { AppConstants } from '../constants/constants'
 import axios, { AxiosResponse } from 'axios'
 import { Student } from '../types/types'
+import passport from 'passport'
 
 const { UNIVERSITY_URI } = AppConstants
 
@@ -10,19 +11,17 @@ const router = Router()
 class IndexRouter {
     // get raw data
     getRawData(): Router {
-        return router.get('/', async(req: Request, res: Response) => {
+        return router.get('/', passport.authenticate('jwt', { session: false }), async(req: Request, res: Response) => {
             const result: [Student] = [{student_id: '', mark: 0, university: '', name: ''}]
             const _result: [Student] = [{student_id: '', mark: 0, university: '', name: ''}]
-            
+            let marks: any = {}
+            let names: any  = {}
             try {
                 // get marks from api endpoint
                 const uj_marks: AxiosResponse<any> = await axios.get(`${UNIVERSITY_URI}UJ/marks`)
                 const uj_names: AxiosResponse<any> = await axios.get(`${UNIVERSITY_URI}UJ/names`)
                 const su_marks: AxiosResponse<any> = await axios.get(`${UNIVERSITY_URI}SU/marks`)
                 const su_names: AxiosResponse<any> = await axios.get(`${UNIVERSITY_URI}SU/names`)
-
-                let marks: any = {}
-                let names: any  = {}
                 
                 // create student objects based on the api response
                 for(const [student_id, mark] of Object.entries(uj_marks.data)) {
