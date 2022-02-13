@@ -12,7 +12,9 @@ class IndexRouter {
     // get raw data
     getRawData(): Router {
         return router.get('/', passport.authenticate('jwt', { session: false }), async(req: Request, res: Response) => {
-            const result: [Student] = [{student_id: '', mark: 0, university: '', name: ''}]
+            const queryLimit = parseInt(req.query.limit as string)
+            const nextQuery = parseInt(req.query.next as string)
+            const preResult: [Student] = [{student_id: '', mark: 0, university: '', name: ''}]
             const _result: [Student] = [{student_id: '', mark: 0, university: '', name: ''}]
             let marks: any = {}
             let names: any  = {}
@@ -26,11 +28,11 @@ class IndexRouter {
                 // create student objects based on the api response
                 for(const [student_id, mark] of Object.entries(uj_marks.data)) {
                     marks = { student_id, mark, university: 'UJ' }
-                    result.push(marks)
+                    preResult.push(marks)
                 }
                 for(const [student_id, mark] of Object.entries(su_marks.data)) {
                     marks = { student_id, mark, university: 'SU' }
-                    result.push(marks)
+                    preResult.push(marks)
                 }
                 for(const [id ,name] of Object.entries(uj_names.data)) {
                     names = { id, name }
@@ -41,15 +43,21 @@ class IndexRouter {
                     _result.push(names)
                 }
                 // map result student names to results
-                result.map((el: any) => {
+                preResult.map((el: any) => {
                    return _result.forEach((res: any) => {
                         if(el.student_id == res.id) {
                             el.name = res.name
                         }
                     })
                 })
+                let result: any = []
+                const paginate = (next: number) => {
+                    result = preResult.slice(next, next + 5)
+                }   
+                paginate(nextQuery )
+                
                 // send response to client
-                res.json({ success: true, result })
+                res.json({ success: true, result, prev: nextQuery, next: queryLimit + 5 })
             } catch (error) {
                 console.log(error)
                 res.json({success: false, error})
